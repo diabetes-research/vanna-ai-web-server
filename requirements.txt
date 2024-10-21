@@ -2,3 +2,9 @@ flask
 vanna[snowflake]
 db-dtypes
 python-dotenv
+openai
+chromadb
+vanna[postgres]
+WSGIServer
+gevent
+flask-cors

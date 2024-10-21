@@ -1,23 +1,21 @@
-# vanna-flask
+# Vanna.AI-webserver
 Web server for chatting with your database
-
-
-
-https://github.com/vanna-ai/vanna-flask/assets/7146154/5794c523-0c99-4a53-a558-509fa72885b9
-
-
 
 # Setup
 
 ## Set your environment variables
 ```
-VANNA_MODEL=
-VANNA_API_KEY=
-SNOWFLAKE_ACCOUNT=
-SNOWFLAKE_USERNAME=
-SNOWFLAKE_PASSWORD=
-SNOWFLAKE_DATABASE=
-SNOWFLAKE_WAREHOUSE=
+OPENAI_API_KEY=<Please provide valid OpenAI API key>
+MODEL_NAME=<Please specify a model name (e.g., gpt-3.5-turbo)>
+MISTRAL_API_KEY = <Please specify API key>
+CHROMA_PATH = <Please set chroma db path>
+primary_db_path = <Provide primary SQLite database path>
+additional_db_path = <Provide secondary SQLite database path>
+```
+
+## Create a virtual environment
+```
+python -m venv <virtualenv_name>
 ```
 
 ## Install dependencies
@@ -29,4 +27,3 @@ pip install -r requirements.txt
 ```
 python app.py
 ```
-

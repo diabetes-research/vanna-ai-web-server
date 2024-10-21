@@ -1,0 +1,21 @@
+version: '3.3'
+services:
+  vanna-ai:
+    container_name: vanna-ai
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+    ports:
+      - 8087:5000
+    volumes:
+      - /mnt/vanna-ai-data:/opt/data/
+
+    networks:
+      - appliance
+
+networks:
+  appliance:
+    external: true
