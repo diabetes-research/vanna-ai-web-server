@@ -266,6 +266,7 @@ class CustomVannaFlask(VannaFlaskApp):
 app = CustomVannaFlask(vn=vn, cache=MemoryCache())
 memory_cache = MemoryCache()
 flask_app = app.flask_app
+CORS(flask_app)
 
 
 @flask_app.route("/api/v0/ask_question_and_run_query", methods=["POST","OPTIONS"])
@@ -326,5 +327,5 @@ if __name__ == '__main__':
     host = '0.0.0.0'  # Replace with your desired IP address
     port = 5000         # Replace with your desired port number
 
-    http_server = WSGIServer((host, port), app.flask_app)
+    http_server = WSGIServer((host, port), flask_app)
     http_server.serve_forever()
