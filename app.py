@@ -316,9 +316,8 @@ def ask_question_and_run_query():
                 df_html = df.to_html(classes="table table-bordered", index=False)
 
             except Exception as e:
-                result = f"An error occurred: {e}"
-                print(result)
-                return jsonify({'error': result}), 400  # Return error with status code
+                result = f"An error occurred while fetching the results"
+                return jsonify({'error': result})
 
     return jsonify({'sql': sql, 'df_html': df_html})
 
