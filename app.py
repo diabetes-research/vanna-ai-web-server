@@ -316,7 +316,7 @@ def ask_question_and_run_query():
                 df_html = df.to_html(classes="table table-bordered", index=False)
 
             except Exception as e:
-                result = f"An error occurred while fetching the results"
+                result = "Sorry, I couldn't quite understand your question. Could you please rephrase or provide more details?"
                 return jsonify({'error': result})
 
     return jsonify({'sql': sql, 'df_html': df_html})
