@@ -224,6 +224,64 @@ app = CustomVannaFlask(vn=vn, cache=cache)
 flask_app = app.flask_app
 CORS(flask_app)
 
+@flask_app.route("/api/v0/ask_question_and_run_query", methods=["POST","OPTIONS"])
+def ask_question_and_run_query():
+    """
+    Ask a question and run the SQL query generated based on the question.
+    ---
+    parameters:
+      - name: question
+        in: body
+        type: string
+        required: true
+        description: The question to generate the SQL query from.
+    responses:
+      200:
+        description: A JSON object containing the SQL query and HTML representation of the result.
+        schema:
+          type: object
+          properties:
+            sql:
+              type: string
+              description: The generated SQL query.
+            df_html:
+              type: string
+              description: The HTML representation of the query result.
+            id:
+              type: string
+      400:
+        description: Invalid input.
+    """
+    sql = None
+    result = None
+    df_html = None
+    id = None
+    if request.method == "OPTIONS":
+        return '', 200
+    if request.method == "POST":
+        # Retrieve the question from the request body
+        data = request.get_json()
+        question = data.get('question')
+
+        if question:
+            try:
+                id = cache.generate_id(question=question)
+                sql = vn.generate_sql(question, allow_llm_to_see_data=True)
+                cache.set(id=id, field="question", value=question)
+                cache.set(id=id, field="sql", value=sql)
+                # Run SQL query and fetch result
+                result = vn.run_sql(sql)
+                # Assuming the result is a DataFrame
+                df = pd.DataFrame(result)
+                # Convert the DataFrame to HTML
+                df_html = df.to_html(classes="table table-bordered", index=False)
+
+
+            except Exception as e:
+                result = "Sorry, I couldn't quite understand your question. Could you please rephrase or provide more details?"
+                return jsonify({'error': result})
+
+    return jsonify({'sql': sql, 'df_html': df_html, 'id': id})
 
 if __name__ == '__main__':
     host = '0.0.0.0'  # Replace with your desired IP address
