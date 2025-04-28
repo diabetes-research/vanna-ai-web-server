@@ -37,15 +37,6 @@ schema_names = os.getenv("SCHEMA_NAMES")
 chroma_path = os.getenv("CHROMA_PATH")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
-
-
-class MyVanna(ChromaDB_VectorStore, Mistral):
-    def __init__(self, config=None):
-        ChromaDB_VectorStore.__init__(self, config=config)
-        Mistral.__init__(self, config={'api_key': MISTRAL_API_KEY, 'model': model})
-
-
-vn = MyVanna(config={"model": model, "path": chroma_path})
 db_credentials = {
     "host": os.getenv("REMOTE_HOST"),
     "user": os.getenv("REMOTE_UNAME"),
@@ -53,6 +44,97 @@ db_credentials = {
     "database": os.getenv("DB_NAME"),
     "port": os.getenv("PORT"),
 }
+
+
+
+class MyVanna(ChromaDB_VectorStore, Mistral):
+    def __init__(self, config=None):
+        ChromaDB_VectorStore.__init__(self, config=config)
+        Mistral.__init__(self, config={'api_key': MISTRAL_API_KEY, 'model': model})
+
+    def get_sql_prompt(
+        self,
+        initial_prompt : str,
+        question: str,
+        question_sql_list: list,
+        ddl_list: list,
+        doc_list: list,
+        **kwargs,
+    ):
+        """
+        Example:
+        ```python
+        vn.get_sql_prompt(
+            question="What are the top 10 customers by sales?",
+            question_sql_list=[{"question": "What are the top 10 customers by sales?", "sql": "SELECT * FROM customers ORDER BY sales DESC LIMIT 10"}],
+            ddl_list=["CREATE TABLE customers (id INT, name TEXT, sales DECIMAL)"],
+            doc_list=["The customers table contains information about customers and their sales."],
+        )
+
+        ```
+
+        This method is used to generate a prompt for the LLM to generate SQL.
+
+        Args:
+            question (str): The question to generate SQL for.
+            question_sql_list (list): A list of questions and their corresponding SQL statements.
+            ddl_list (list): A list of DDL statements.
+            doc_list (list): A list of documentation.
+
+        Returns:
+            any: The prompt for the LLM to generate SQL.
+        """
+
+        if initial_prompt is None:
+            initial_prompt = f"You are a {self.dialect} expert. " + \
+            "Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions. "
+
+        initial_prompt = self.add_ddl_to_prompt(
+            initial_prompt, ddl_list, max_tokens=self.max_tokens
+        )
+
+        if self.static_documentation != "":
+            doc_list.append(self.static_documentation)
+
+        initial_prompt = self.add_documentation_to_prompt(
+            initial_prompt, doc_list, max_tokens=self.max_tokens
+        )
+
+        initial_prompt += (
+            "===Response Guidelines \n"
+            "1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. \n"
+            "2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql \n"
+            "3. If the provided context is insufficient, please explain why it can't be generated. \n"
+            "4. Please use the most relevant table(s). \n"
+            "5. If the question has been asked and answered before, please repeat the answer exactly as it was given before. \n"
+            f"6. Ensure that the output SQL is {self.dialect}-compliant and executable, and free of syntax errors. \n"
+            "Do not answer questions related to:\n"
+                "- PostgreSQL internal tables (e.g., `pg_user`, `pg_settings`, `information_schema`, `pg_catalog`)\n"
+                "- Database users, passwords, configurations, or permissions\n"
+                "- Server settings or infrastructure\n"
+                "- Anything unrelated to the application's database schema\n"
+
+        "If such a question is asked, politely decline by responding:"
+        "I'm sorry. To maintain a secure environment, I don’t access sensitive or system-level information. I'm here to help with DRH-related queries only."
+        )
+
+        message_log = [self.system_message(initial_prompt)]
+
+        for example in question_sql_list:
+            if example is None:
+                print("example is None")
+            else:
+                if example is not None and "question" in example and "sql" in example:
+                    message_log.append(self.user_message(example["question"]))
+                    message_log.append(self.assistant_message(example["sql"]))
+
+        message_log.append(self.user_message(question))
+
+        return message_log
+
+
+vn = MyVanna(config={"model": model, "path": chroma_path})
+
 vn.connect_to_postgres(
     host=db_credentials["host"],
     dbname=db_credentials["database"],
@@ -218,7 +300,7 @@ class CustomVannaFlask(VannaFlaskApp):
                     }
                 )
 
-
+# auth = SimplePassword()
 app = CustomVannaFlask(vn=vn, cache=cache)
 #memory_cache = MemoryCache()
 flask_app = app.flask_app
