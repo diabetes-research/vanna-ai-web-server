@@ -108,12 +108,7 @@ class MyVanna(ChromaDB_VectorStore, Mistral):
             "4. Please use the most relevant table(s). \n"
             "5. If the question has been asked and answered before, please repeat the answer exactly as it was given before. \n"
             f"6. Ensure that the output SQL is {self.dialect}-compliant and executable, and free of syntax errors. \n"
-            "Do not answer questions related to:\n"
-                "- PostgreSQL internal tables (e.g., `pg_user`, `pg_settings`, `information_schema`, `pg_catalog`)\n"
-                "- Database users, passwords, configurations, or permissions\n"
-                "- Server settings or infrastructure\n"
-        "If such a question is asked, politely decline by responding:"
-        "I'm sorry. To maintain a secure environment, I don’t access sensitive or system-level information. I'm here to help with DRH-related queries only."
+            
         )
 
         message_log = [self.system_message(initial_prompt)]
